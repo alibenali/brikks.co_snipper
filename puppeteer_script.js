@@ -39,7 +39,7 @@ const monitorRides = async () => {
     browser = await puppeteer.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       executablePath: puppeteer.executablePath(),
-      headless: false,
+      headless: process.env.HEADLESS,
       timeout: 0,
     });
 
