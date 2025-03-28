@@ -38,7 +38,8 @@ const monitorRides = async () => {
   try {
     browser = await puppeteer.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: puppeteer.executablePath(),
+      //executablePath: puppeteer.executablePath(),
+      executablePath: '/usr/bin/chromium-browser',
       headless: process.env.HEADLESS,
       timeout: 0,
     });
