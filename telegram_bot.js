@@ -106,6 +106,7 @@ bot.onText(/\/set_interval/, (msg) => {
 
 // Gestion des réponses de l'utilisateur pour l'intervalle
 bot.on("message", (msg) => {
+  logger.info(`Message reçu : ${JSON.stringify(msg)}`);
   if (msg.reply_to_message && msg.reply_to_message.text.includes("intervalle")) {
     const chatId = msg.chat.id;
     const newInterval = parseInt(msg.text, 10);
