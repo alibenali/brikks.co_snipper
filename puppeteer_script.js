@@ -38,7 +38,7 @@ const monitorRides = async () => {
   try {
     browser = await puppeteer.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      //executablePath: puppeteer.executablePath(),
+      // executablePath: puppeteer.executablePath(),
       executablePath: '/usr/bin/chromium-browser',
       headless: process.env.HEADLESS,
       timeout: 0,
@@ -50,6 +50,8 @@ const monitorRides = async () => {
 
     if (!await login(page, logger)) {
       logger.error('Échec de la connexion.');
+      await sendMessage(message='❌ Erreur lors Login ❌🚀');
+      await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, message='❌ Erreur lors de Login ❌🚀');
       return;
     }
 
@@ -69,8 +71,8 @@ const monitorRides = async () => {
 
       if (running_after_error) {
         logger.info('La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
-        await sendMessage('✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
-        await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, '✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
+        await sendMessage(message='✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
+        await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, message='✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
         running_after_error = false;
       }
 
