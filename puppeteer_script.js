@@ -36,12 +36,19 @@ const getSettings = () => {
 const monitorRides = async () => {
   let browser;
   try {
-    browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      // executablePath: puppeteer.executablePath(),
-      executablePath: '/usr/bin/chromium-browser',
+    const browser = await puppeteer.launch({
       headless: process.env.HEADLESS,
-      timeout: 0,
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--mute-audio',
+        '--disable-audio-output',
+        '--disable-features=AudioServiceOutOfProcess',
+        '--no-zygote'
+      ],
+      ignoreDefaultArgs: ['--enable-audio-service-sandbox']
     });
 
     const page = await browser.newPage();
