@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-async function sendMessage(chat_id=process.env.CHAT_ID, message) {
+async function sendMessage(chat_id=process.env.CHAT_ID, message="TEST") {
     try {
         const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
