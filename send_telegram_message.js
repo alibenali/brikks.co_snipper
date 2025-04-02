@@ -23,7 +23,4 @@ async function sendMessage(chat_id=process.env.CHAT_ID, message="TEST") {
         console.error(`Error sending message: ${error.message}`);
     }
 }
-
-sendMessage(message="TEST");
-
 module.exports = sendMessage;
