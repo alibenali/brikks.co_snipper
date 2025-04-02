@@ -59,16 +59,16 @@ async function checkForRides(page, logger) {
             logger.info(`Traitement du trajet : ${JSON.stringify(ride)}`);
             if (ride.acceptUrl) {
                 await sendMessage(
-                    `💰 Trajet trouvé : ${ride.price}€\n🛣️ Itinéraire : ${ride.route}\n🕒 Départ : ${ride.departure} à ${ride.departureTime}`
+                    message=`💰 Trajet trouvé : ${ride.price}€\n🛣️ Itinéraire : ${ride.route}\n🕒 Départ : ${ride.departure} à ${ride.departureTime}`
                 );
 
                 try {
                     await page.click(`.panel-cta a[href="${ride.acceptUrl}"]`);
                     await page.waitForNavigation({ timeout: 5000 });
-                    await sendMessage('✅ Trajet accepté avec succès !');
+                    await sendMessage(message='✅ Trajet accepté avec succès !');
                     logger.info('Trajet accepté avec succès.');
                 } catch (error) {
-                    await sendMessage('❌ Échec de l’acceptation du trajet');
+                    await sendMessage(message='❌ Échec de l’acceptation du trajet');
                     logger.error(`Échec de l’acceptation du trajet : ${error.message}`);
                 }
             }
