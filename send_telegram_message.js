@@ -24,4 +24,6 @@ async function sendMessage(chat_id=process.env.CHAT_ID, message="TEST") {
     }
 }
 
+sendMessage(message="TEST");
+
 module.exports = sendMessage;

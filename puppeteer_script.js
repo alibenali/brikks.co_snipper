@@ -50,7 +50,7 @@ const monitorRides = async () => {
 
     if (!await login(page, logger)) {
       logger.error('Échec de la connexion.');
-      await sendMessage(message='❌ Erreur lors Login ❌🚀');
+      await sendMessage(chat_id=process.env.CHAT_ID, message='❌ Erreur lors Login ❌🚀');
       await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, message='❌ Erreur lors de Login ❌🚀');
       return;
     }
@@ -71,7 +71,7 @@ const monitorRides = async () => {
 
       if (running_after_error) {
         logger.info('La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
-        await sendMessage(message='✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
+        await sendMessage(chat_id=process.env.CHAT_ID, message='✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
         await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, message='✅ La surveillance a redémarré après une erreur et fonctionne à nouveau. ✅🚀');
         running_after_error = false;
       }
@@ -82,7 +82,7 @@ const monitorRides = async () => {
   } catch (error) {
     logger.error(`Erreur : ${error.message}`);
     running_after_error = true;
-    await sendMessage(message='❌ Erreur lors de la vérification des trajets. ❌🚀');
+    await sendMessage(chat_id=process.env.CHAT_ID, message='❌ Erreur lors de la vérification des trajets. ❌🚀');
     await sendMessage(chat_id=process.env.DEVELOPER_CHAT_ID, message='❌ Erreur lors de la vérification des trajets. ❌🚀');
   } finally {
     try {
