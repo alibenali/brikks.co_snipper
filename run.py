@@ -100,7 +100,6 @@ def check_rides(session: requests.Session, price: float) -> str:
             crf_token = soup.find("meta", {"name": "csrf-token"})["content"]
             logger.info("Ride found, ready to accept.")
             return [crf_token, accept_url]
-    logger.info("No valid rides found.")
     return False
 
 def accept_ride(session: requests.Session, ride_url: str, crf_token: str = None) -> str:
@@ -166,7 +165,7 @@ def main():
                         results = check_rides(session,settings.get("price", DEFAULT_SETTINGS["price"]))
                         if results:
                             crf_token, accept_url = results
-                            # accept_ride(session, accept_url, crf_token)
+                            accept_ride(session, accept_url, crf_token)
                         sleep(settings.get("interval", DEFAULT_SETTINGS["interval"]))
                 else:
                     logger.error("[-] Login failed.")
