@@ -1,0 +1,4 @@
+[2025-03-28T10:26:36.389Z] INFO: Paramètres mis à jour : {"monitoring":true}
+[2025-03-28T10:27:35.520Z] INFO: Paramètres mis à jour : {"monitoring":true}
+[2025-03-28T10:27:49.540Z] INFO: Paramètres mis à jour : {"monitoring":false}
+[2025-03-28T12:04:33.054Z] INFO: Message reçu : {"message_id":1988,"from":{"id":1109073851,"is_bot":false,"first_name":"Ali","last_name":"Programmer","username":"ali_programmer31","language_code":"en"},"chat":{"id":1109073851,"first_name":"Ali","last_name":"Programmer","username":"ali_programmer31","type":"private"},"date":1743163474,"text":"/status","entities":[{"offset":0,"length":7,"type":"bot_command"}]}
