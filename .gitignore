@@ -4,3 +4,4 @@ puppeteer.log
 ride_monitor.log
 settings.json
 node_modules
+env
