@@ -77,8 +77,33 @@ def login(session: requests.Session, email: str, password: str) -> bool:
         return True
 
     logger.error("Login failed. Invalid credentials?")
-    return None
+    return False
 
+def extract_ride_info(html_panel: BeautifulSoup) -> dict:
+
+    try:
+        depart_time = html_panel.find("div", class_="col-md-1").find_all("div", class_="row")[1].text.strip()
+        trajets = html_panel.find_all("div", class_="col-md-1")[1].text.strip()
+        type_label = html_panel.find_all("div", class_="col-md-1")[2].text.strip()
+        itinerary = html_panel.find("div", class_="col-md-7").text.strip()
+        arrival_time = html_panel.find_all("div", class_="col-md-1")[3].find_all("div", class_="row")[1].text.strip()
+        price = html_panel.find("span", class_="label-price").text.strip()
+        action_link = html_panel.find("a", class_="btn btn-block")["href"]
+
+
+        return {
+            "depart_time": depart_time,
+            "trajets": trajets,
+            "type": type_label,
+            "itinerary": itinerary,
+            "arrival_time": arrival_time,
+            "price": price,
+            "action_link": action_link
+        }
+    except Exception as e:
+        print("Error while parsing ride info:", e)
+        return {}
+    
 def check_rides(session: requests.Session, price: float) -> str:
     """Access a page that requires authentication"""
     response = session.get("https://app.brikks.co/d/rides", headers=HEADERS)
@@ -94,18 +119,17 @@ def check_rides(session: requests.Session, price: float) -> str:
         logger.debug(f"Found ride with price: {price}")
         if price_ >= price:
             panel_div = price_span.parent.parent.parent.parent.parent
-            accept_url = panel_div.find("a", {"class": "btn-block"})["href"]
-
+            ride_info = extract_ride_info(panel_div)
             # get crftoken from <meta name="csrf-token" content="...">
             crf_token = soup.find("meta", {"name": "csrf-token"})["content"]
             logger.info("Ride found, ready to accept.")
-            return [crf_token, accept_url]
+            return [crf_token, ride_info]
     return False
 
-def accept_ride(session: requests.Session, ride_url: str, crf_token: str = None) -> str:
-    logger.info(f"Accepting ride at URL: {ride_url}")
+def accept_ride(session: requests.Session, ride_info: str, crf_token: str = None) -> str:
+    logger.info(f"Accepting ride at URL: {ride_info['action_link']}")
     authenticity_token = crf_token
-    ride_id = ride_url.split("/")[-1]
+    ride_id = ride_info["action_link"].split("/")[-1]
     url = f"https://app.brikks.co/d/rides/{ride_id}"
     payload = {
         "_method": "put",
@@ -119,32 +143,15 @@ def accept_ride(session: requests.Session, ride_url: str, crf_token: str = None)
 
     response = session.post(url, headers=headers, data=payload)
     if response.status_code != 200:
-        logger.error(f"Failed to accept ride at {ride_url}. Status code: {response.status_code}")
+        logger.error(f"Failed to accept ride at {ride_info['action_link']}. Status code: {response.status_code}")
         raise Exception("Failed to accept ride")
     logger.info("Ride accepted successfully.")
-    
-    # Parse HTML response with BeautifulSoup
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # Extract price
-    price_element = soup.find('span', class_='label label-success label-price')
-    price = price_element.get_text(strip=True) if price_element else 'Price not found'
-
-    # Extract address
-    address_element = soup.find('div', class_='driver-order-customer-address')
-    address = address_element.get_text(separator=" ", strip=True) if address_element else 'Address not found'
 
     # Send details in the Telegram message
-    message = f"✅ Trajet accepté avec succès !\nPrix: {price}\nAdresse: {address}"
+    message = f"✅ Trajet accepté avec succès:\nPrix: {ride_info['price']}€\nAdresse: {ride_info['itinerary']}\nDepart: {ride_info['depart_time']}\nArrivé: {ride_info['arrival_time']}\nTrajets: {ride_info['trajets']}\nType: {ride_info['type']}"
     send_message(chat_id=os.getenv("CHAT_ID"), message=message)
 
-    # save the response to a file
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    with open(f"response_{timestamp}.html", "w") as f:
-        f.write(response.text)
-    return response.text
 def main():
-    session = requests.Session()
 
     email = os.getenv("EMAIL")
     password = os.getenv("PASSWORD")
@@ -154,6 +161,7 @@ def main():
         if(settings.get("monitoring", DEFAULT_SETTINGS["monitoring"]) == True):
             try:
                 logger.info("Starting the login process.")
+                session = requests.Session()
                 login_success = login(session, email, password)
                 if login_success:
                     logger.info("[+] Logged in successfully.")
