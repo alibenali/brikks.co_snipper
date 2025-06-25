@@ -146,6 +146,9 @@ def accept_ride(session: requests.Session, ride_info: str, crf_token: str = None
         logger.error(f"Failed to accept ride at {ride_info['action_link']}. Status code: {response.status_code}")
         raise Exception("Failed to accept ride")
     logger.info("Ride accepted successfully.")
+    # save response to a file in logs folder
+    with open(os.path.join(os.path.dirname(__file__), "logs", f"accept_ride_{datetime.now().timestamp()}.html"), "w") as f:
+        f.write(response.text)
 
     # Send details in the Telegram message
     message = f"✅ Trajet accepté avec succès:\nPrix: {ride_info['price']}€\nAdresse: {ride_info['itinerary']}\nDepart: {ride_info['depart_time']}\nArrivé: {ride_info['arrival_time']}\nTrajets: {ride_info['trajets']}\nType: {ride_info['type']}"

@@ -146,10 +146,10 @@ bot.on("message", (msg) => {
     const chatId = msg.chat.id;
     const newPrice = parseFloat(msg.text);
 
-    if (isNaN(newPrice) || newPrice < 50 || newPrice > 1000) {
+    if (isNaN(newPrice) || newPrice < 20 || newPrice > 1000) {
       bot.sendMessage(
         chatId,
-        "⚠️ Le seuil de prix doit être un nombre entre 50 et 1000 euros."
+        "⚠️ Le seuil de prix doit être un nombre entre 20 et 1000 euros."
       );
       return;
     }
