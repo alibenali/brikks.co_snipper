@@ -1,5 +1,5 @@
 {
-  "monitoring": true,
-  "interval": 10,
-  "price": 200
+  "monitoring": false,
+  "interval": 30,
+  "price": 210
 }
