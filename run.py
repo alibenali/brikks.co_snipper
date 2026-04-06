@@ -11,12 +11,12 @@ dotenv.load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
-LOGIN_URL = "https://app.brikks.co/users/sign_in"
+LOGIN_URL = "https://web.convoicar.fr/users/sign_in"
 HEADERS = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'content-type': 'application/x-www-form-urlencoded',
-    'origin': 'https://app.brikks.co',
+    'origin': 'https://web.convoicar.fr',
     'referer': LOGIN_URL,
 }
 DEFAULT_SETTINGS = json.loads(os.getenv("DEFAULT_SETTINGS", None))
@@ -106,7 +106,7 @@ def extract_ride_info(html_panel: BeautifulSoup) -> dict:
     
 def check_rides(session: requests.Session, price: float) -> str:
     """Access a page that requires authentication"""
-    response = session.get("https://app.brikks.co/d/rides", headers=HEADERS)
+    response = session.get("https://web.convoicar.fr/d/rides", headers=HEADERS)
     if response.status_code != 200:
         logger.error("Failed to access rides page.")
         raise Exception("Failed to access page")
@@ -130,15 +130,15 @@ def accept_ride(session: requests.Session, ride_info: str, crf_token: str = None
     logger.info(f"Accepting ride at URL: {ride_info['action_link']}")
     authenticity_token = crf_token
     ride_id = ride_info["action_link"].split("/")[-1]
-    url = f"https://app.brikks.co/d/rides/{ride_id}"
+    url = f"https://web.convoicar.fr/d/rides/{ride_id}"
     payload = {
         "_method": "put",
         "authenticity_token": authenticity_token
     }
     headers = HEADERS.copy()
     headers.update({
-        "referer": "https://app.brikks.co/d/rides",
-        "origin": "https://app.brikks.co"
+        "referer": "https://web.convoicar.fr/d/rides",
+        "origin": "https://web.convoicar.fr"
     })
 
     response = session.post(url, headers=headers, data=payload)
