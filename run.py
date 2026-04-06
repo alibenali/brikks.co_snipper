@@ -10,13 +10,14 @@ dotenv.load_dotenv()
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
-
-LOGIN_URL = "https://web.convoicar.fr/users/sign_in"
+#domain_name = "app.brikks.co"
+domain_name = "web.convoicar.fr"
+LOGIN_URL = f"https://{domain_name}/users/sign_in"
 HEADERS = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'content-type': 'application/x-www-form-urlencoded',
-    'origin': 'https://web.convoicar.fr',
+    'origin': f'https://{domain_name}',
     'referer': LOGIN_URL,
 }
 DEFAULT_SETTINGS = json.loads(os.getenv("DEFAULT_SETTINGS", None))
@@ -103,10 +104,11 @@ def extract_ride_info(html_panel: BeautifulSoup) -> dict:
     except Exception as e:
         print("Error while parsing ride info:", e)
         return {}
-    
-def check_rides(session: requests.Session, price: float) -> str:
+
+def check_rides(session: requests.Session, price: float):
     """Access a page that requires authentication"""
-    response = session.get("https://web.convoicar.fr/d/rides", headers=HEADERS)
+    global domain_name
+    response = session.get(f"https://{domain_name}/d/rides", headers=HEADERS)
     if response.status_code != 200:
         logger.error("Failed to access rides page.")
         raise Exception("Failed to access page")
@@ -116,29 +118,51 @@ def check_rides(session: requests.Session, price: float) -> str:
     price_spans = soup.find_all("span", {"class": "label label-success label-price"})
     for price_span in price_spans:
         price_ = float(price_span.text.replace(",", ".").replace("€", ""))
-        logger.debug(f"Found ride with price: {price}")
+        logger.debug(f"Found ride with price: {price_}")
         if price_ >= price:
             panel_div = price_span.parent.parent.parent.parent.parent
             ride_info = extract_ride_info(panel_div)
-            # get crftoken from <meta name="csrf-token" content="...">
+            ride_id = ride_info["action_link"].split("/")[-1]
+
+            # ensure saved_rides.json exists
+            file_path = os.path.join(os.path.dirname(__file__), "saved_rides.json")
+            if not os.path.exists(file_path):
+                with open(file_path, "w") as f:
+                    json.dump([], f)  # or {} if you want dicts
+
+            # load saved rides
+            with open(file_path, "r") as f:
+                try:
+                    saved_rides = json.load(f)
+                except json.JSONDecodeError:
+                    saved_rides = []  # fallback if file empty/corrupt
+
+            if ride_id in saved_rides:
+                logger.info(f"Ride {ride_id} already accepted.")
+                return False
+
+            # get csrf token from meta tag
             crf_token = soup.find("meta", {"name": "csrf-token"})["content"]
             logger.info("Ride found, ready to accept.")
             return [crf_token, ride_info]
+
     return False
 
+
 def accept_ride(session: requests.Session, ride_info: str, crf_token: str = None) -> str:
+    global domain_name
     logger.info(f"Accepting ride at URL: {ride_info['action_link']}")
     authenticity_token = crf_token
     ride_id = ride_info["action_link"].split("/")[-1]
-    url = f"https://web.convoicar.fr/d/rides/{ride_id}"
+    url = f"https://{domain_name}/d/rides/{ride_id}"
     payload = {
         "_method": "put",
         "authenticity_token": authenticity_token
     }
     headers = HEADERS.copy()
     headers.update({
-        "referer": "https://web.convoicar.fr/d/rides",
-        "origin": "https://web.convoicar.fr"
+        "referer": f"https://{domain_name}/d/rides",
+        "origin": f"https://{domain_name}"
     })
 
     response = session.post(url, headers=headers, data=payload)
@@ -146,6 +170,17 @@ def accept_ride(session: requests.Session, ride_info: str, crf_token: str = None
         logger.error(f"Failed to accept ride at {ride_info['action_link']}. Status code: {response.status_code}")
         raise Exception("Failed to accept ride")
     logger.info("Ride accepted successfully.")
+
+    # save to saved_rides.json if not already exists
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), "saved_rides.json")):
+        with open(os.path.join(os.path.dirname(__file__), "saved_rides.json"), "w") as f:
+            f.write("[]")
+    with open(os.path.join(os.path.dirname(__file__), "saved_rides.json"), "r") as f:
+        saved_rides = json.load(f)
+    saved_rides.append(ride_id)
+    with open(os.path.join(os.path.dirname(__file__), "saved_rides.json"), "w") as f:
+        json.dump(saved_rides, f)
+
     # save response to a file in logs folder
     with open(os.path.join(os.path.dirname(__file__), "logs", f"accept_ride_{datetime.now().timestamp()}.html"), "w") as f:
         f.write(response.text)
