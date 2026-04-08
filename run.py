@@ -204,7 +204,6 @@ def extract_ride_info(html_panel: BeautifulSoup) -> dict:
 def check_rides(session: requests.Session, price: float):
     """Access a page that requires authentication."""
     response = session.get(f"https://{domain_name}/d/rides", headers=HEADERS, timeout=30)
-
     if is_blocked(response):
         raise BlockedError(f"Blocked on rides page (HTTP {response.status_code})")
     if response.status_code != 200:
