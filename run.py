@@ -203,27 +203,48 @@ def extract_ride_info(html_panel: BeautifulSoup) -> dict:
 
 def check_rides(session: requests.Session, price: float):
     """Access a page that requires authentication."""
+    proxy_display = session.proxies.get("https", "no proxy")
+    logger.info(f"[check_rides] Fetching rides page via proxy: {proxy_display}")
+
     response = session.get(f"https://{domain_name}/d/rides", headers=HEADERS, timeout=30)
+    logger.info(f"[check_rides] Response: HTTP {response.status_code} | URL: {response.url}")
+
     if is_blocked(response):
+        logger.warning(f"[check_rides] Blocked response detected (HTTP {response.status_code}).")
         raise BlockedError(f"Blocked on rides page (HTTP {response.status_code})")
     if response.status_code != 200:
-        logger.error("Failed to access rides page.")
+        logger.error(f"[check_rides] Unexpected status {response.status_code} — cannot parse rides page.")
         raise Exception("Failed to access page")
 
     # Detect session expiry — site redirected us back to login
     if "sign_in" in response.url or "Connexion" in response.text[:500]:
+        logger.warning("[check_rides] Redirected to login page — session has expired.")
         raise SessionExpiredError("Session expired — need to re-login.")
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
     price_spans = soup.find_all("span", {"class": "label label-success label-price"})
+    logger.info(f"[check_rides] Found {len(price_spans)} ride(s) on the page. Filtering by price >= {price}€...")
+
     for price_span in price_spans:
-        price_ = float(price_span.text.replace(",", ".").replace("€", ""))
-        logger.debug(f"Found ride with price: {price_}")
+        raw_price = price_span.text.strip()
+        try:
+            price_ = float(raw_price.replace(",", ".").replace("€", ""))
+        except ValueError:
+            logger.warning(f"[check_rides] Could not parse price value: '{raw_price}' — skipping.")
+            continue
+
+        logger.info(f"[check_rides] Ride price: {price_}€ (threshold: {price}€) — {'eligible' if price_ >= price else 'below threshold'}")
+
         if price_ >= price:
             panel_div = price_span.parent.parent.parent.parent.parent
             ride_info = extract_ride_info(panel_div)
+            if not ride_info:
+                logger.warning("[check_rides] Failed to extract ride info — skipping this ride.")
+                continue
+
             ride_id = ride_info["action_link"].split("/")[-1]
+            logger.info(f"[check_rides] Eligible ride ID: {ride_id} | Route: {ride_info.get('itinerary', 'N/A')}")
 
             file_path = os.path.join(os.path.dirname(__file__), "saved_rides.json")
             if not os.path.exists(file_path):
@@ -236,13 +257,14 @@ def check_rides(session: requests.Session, price: float):
                     saved_rides = []
 
             if ride_id in saved_rides:
-                logger.info(f"Ride {ride_id} already accepted.")
-                return False
+                logger.info(f"[check_rides] Ride {ride_id} already accepted — skipping.")
+                continue
 
             crf_token = soup.find("meta", {"name": "csrf-token"})["content"]
-            logger.info("Ride found, ready to accept.")
+            logger.info(f"[check_rides] New eligible ride found! ID={ride_id}, price={price_}€ — proceeding to accept.")
             return [crf_token, ride_info]
 
+    logger.info("[check_rides] No new eligible rides found this cycle.")
     return False
 
 
